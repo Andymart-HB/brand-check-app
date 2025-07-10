@@ -1,0 +1,188 @@
+# Brand Check Service Makefile
+
+.PHONY: help install dev build test lint typecheck docker-build docker-run clean ci
+
+# Variables
+IMAGE_NAME := brand-check-service
+IMAGE_TAG := latest
+PORT := 3000
+
+help: ## Show this help message
+	@echo "Brand Check Service - Available commands:"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+install: ## Install dependencies
+	npm install
+	cd client && npm install
+
+dev: ## Start development server
+	npm run dev
+
+build: ## Build the application
+	npm run build
+
+test: ## Run tests
+	npm test
+
+test-watch: ## Run tests in watch mode
+	npm run test:watch
+
+test-coverage: ## Run tests with coverage
+	npm run test:coverage
+
+lint: ## Lint the code
+	npm run lint
+
+lint-fix: ## Fix linting issues
+	npm run lint:fix
+
+typecheck: ## Run TypeScript type checking
+	npm run typecheck
+
+clean: ## Clean build artifacts
+	rm -rf dist/
+	rm -rf client/dist/
+	rm -rf node_modules/
+	rm -rf client/node_modules/
+	rm -rf coverage/
+	rm -rf logs/
+	docker image rm $(IMAGE_NAME):$(IMAGE_TAG) 2>/dev/null || true
+
+docker-build: ## Build Docker image
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+
+docker-run: ## Run Docker container
+	docker run --rm -p $(PORT):$(PORT) \
+		-e NODE_ENV=production \
+		-e PORT=$(PORT) \
+		-v $(PWD)/data:/app/data:ro \
+		--name brand-check-service \
+		$(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-dev: ## Run Docker container in development mode
+	docker run --rm -p $(PORT):$(PORT) \
+		-e NODE_ENV=development \
+		-e PORT=$(PORT) \
+		-e EDIT_TOKEN=dev-edit-token \
+		-v $(PWD)/data:/app/data \
+		--name brand-check-service-dev \
+		$(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-size: ## Check Docker image size
+	@echo "Docker image size:"
+	@docker images $(IMAGE_NAME):$(IMAGE_TAG) --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
+
+docker-inspect: ## Inspect Docker image
+	docker run --rm $(IMAGE_NAME):$(IMAGE_TAG) node -e "console.log('Node version:', process.version); console.log('Memory limit:', Math.round(process.memoryUsage().heapTotal / 1024 / 1024), 'MB');"
+
+ci: ## Run CI pipeline (lint, typecheck, test, build)
+	@echo "🔍 Running linter..."
+	npm run lint
+	@echo "✅ Linting passed"
+	@echo ""
+	@echo "🔍 Running type check..."
+	npm run typecheck
+	@echo "✅ Type checking passed"
+	@echo ""
+	@echo "🧪 Running tests..."
+	npm test
+	@echo "✅ Tests passed"
+	@echo ""
+	@echo "🏗️  Building application..."
+	npm run build
+	@echo "✅ Build completed"
+	@echo ""
+	@echo "🐳 Building Docker image..."
+	$(MAKE) docker-build
+	@echo "✅ Docker image built"
+	@echo ""
+	@echo "📏 Checking image size..."
+	$(MAKE) docker-size
+	@echo ""
+	@echo "🎉 CI pipeline completed successfully!"
+
+release: ci ## Build release version
+	@echo "🚀 Creating release..."
+	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$$(date +%Y%m%d-%H%M%S)
+	@echo "✅ Release created"
+
+benchmark: ## Run performance benchmarks
+	@echo "🏃 Running benchmarks..."
+	@echo "Testing document load performance..."
+	time curl -s http://localhost:$(PORT)/api/doc > /dev/null
+	@echo "Testing search performance..."
+	time curl -s "http://localhost:$(PORT)/api/search?q=brand" > /dev/null
+	@echo "Testing concurrent requests..."
+	ab -n 100 -c 10 http://localhost:$(PORT)/health
+
+health-check: ## Check if service is healthy
+	@echo "🏥 Checking service health..."
+	@curl -f http://localhost:$(PORT)/health || (echo "❌ Service is not healthy" && exit 1)
+	@echo "✅ Service is healthy"
+
+logs: ## Show application logs (for Docker)
+	docker logs -f brand-check-service 2>/dev/null || echo "Container not running"
+
+stop: ## Stop running Docker container
+	docker stop brand-check-service 2>/dev/null || echo "Container not running"
+
+setup-dev: ## Setup development environment
+	@echo "🛠️  Setting up development environment..."
+	$(MAKE) install
+	@echo "📝 Creating .env file..."
+	cp .env.example .env || echo "EDIT_TOKEN=dev-edit-token" > .env
+	@echo "✅ Development environment ready!"
+	@echo ""
+	@echo "Run 'make dev' to start the development server"
+
+# Memory and performance monitoring
+monitor: ## Monitor resource usage
+	@echo "📊 Monitoring resource usage..."
+	@echo "Press Ctrl+C to stop monitoring"
+	@while true; do \
+		echo "$$(date): Memory: $$(docker stats --no-stream --format '{{.MemUsage}}' brand-check-service 2>/dev/null || echo 'Container not running')"; \
+		sleep 5; \
+	done
+
+# Production deployment helpers
+deploy-check: ## Pre-deployment checks
+	@echo "🔍 Running pre-deployment checks..."
+	@echo "Checking environment variables..."
+	@test -n "$$EDIT_TOKEN" || (echo "❌ EDIT_TOKEN not set" && exit 1)
+	@echo "✅ Environment variables OK"
+	@echo "Checking image size..."
+	@SIZE=$$(docker images $(IMAGE_NAME):$(IMAGE_TAG) --format "{{.Size}}" | sed 's/MB//'); \
+	if [ "$${SIZE%%.*}" -gt 400 ]; then \
+		echo "❌ Image size ($$SIZE) exceeds 400MB limit"; \
+		exit 1; \
+	fi
+	@echo "✅ Image size OK"
+	@echo "🎉 Pre-deployment checks passed!"
+
+# Development utilities
+format: ## Format code
+	npm run lint:fix
+	cd client && npm run lint -- --fix 2>/dev/null || true
+
+outdated: ## Check for outdated dependencies
+	npm outdated
+	cd client && npm outdated
+
+update-deps: ## Update dependencies
+	npm update
+	cd client && npm update
+
+security-audit: ## Run security audit
+	npm audit
+	cd client && npm audit
+
+# Quick commands
+quick-test: ## Quick test (unit tests only)
+	npm test -- --testPathPattern=unit
+
+quick-build: ## Quick build (no clean)
+	npm run build
+
+serve: ## Serve built application locally
+	npm start
