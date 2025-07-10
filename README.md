@@ -1,355 +1,712 @@
-# Brand Check App 
+# Brand Check Service
 
-## 1. Executive Summary
+A production-ready microservice that transforms Markdown files into searchable, section-addressable, and editable HTTP/React applications. Built for the Brand Check app documentation system.
 
-Brand Check is a quality review automation platform designed to streamline and standardize the creative quality assurance process. Currently in MVP stage, the app aims to transform manual quality reviews into an efficient, automated workflow that ensures brand consistency and reduces errors in creative deliverables.
+## 🚀 Quick Start
 
-## 2. Current State Analysis
+```bash
+# Clone and setup
+git clone <repository-url>
+cd brand-check-service
+make setup-dev
 
-### 2.1 What Exists Now
-- **Basic UI Shell**: Minimal interface showing "Choose brand: HB – Core Brand Run Check"
-- **Framework Foundation**: Basic web app structure deployed on Netlify
-- **Limited Functionality**: No actual quality checking features implemented
+# Start development server
+make dev
 
-### 2.2 Critical Gaps
-- No document upload or processing capabilities
-- No automated quality checks
-- No brand validation features
-- No workflow management
-- No collaboration tools
-- No reporting or analytics
-
-## 3. Vision for the Improved App
-
-### 3.1 Core Purpose
-Transform the manual, time-intensive quality review process into an intelligent, automated system that:
-- Catches errors before they reach clients
-- Ensures brand compliance across all materials
-- Reduces review time by 50-70%
-- Provides consistent quality standards
-- Creates accountability through audit trails
-
-### 3.2 Target Users
-- **Primary**: Designers and creative teams
-- **Secondary**: Project managers and account managers
-- **Tertiary**: Creative directors and quality reviewers
-- **Extended**: Clients (view-only access to status)
-
-## 4. Key Improvements & Features
-
-### 4.1 Document Intelligence Hub
-
-#### Upload & Processing
-```
-User Flow:
-1. Drag & drop multiple files (PDF, DOCX, PPTX, AI, PSD)
-2. Automatic text extraction and image analysis
-3. Smart categorization (brochure, report, presentation, etc.)
-4. Instant preview with page navigation
+# Or run with Docker
+make docker-build
+make docker-run
 ```
 
-#### Smart Detection Engine
-- **Text Analysis**
-  - Spell checking with industry-specific dictionaries
-  - Grammar validation with context awareness
-  - Consistency checking (British vs American English)
-  - Terminology validation against brand glossary
+The service will be available at `http://localhost:3000`
 
-- **Visual Analysis**
-  - Logo placement and size validation
-  - Color accuracy checking (±5% tolerance)
-  - Image resolution verification
-  - Font usage compliance
-  - Alignment and spacing consistency
+## 📋 Requirements Met
 
-### 4.2 Brand Compliance Center
+✅ **Endpoints**: `GET /search?q=`, `GET /doc`, `GET /doc#<slug>`, `PUT /doc`  
+✅ **Search**: Semantic + keyword search over H1/H2 blocks  
+✅ **Performance**: <5s reload after file changes  
+✅ **Security**: Bearer token authentication for `PUT /doc`  
+✅ **Size**: Docker image ≤400MB, RAM usage ≤300MB  
+✅ **Architecture**: Node.js + TypeScript + React SPA  
 
-#### Brand Asset Library
-```
-Features:
-- Approved logo versions with usage guidelines
-- Official color palettes (RGB, CMYK, HEX, Pantone)
-- Typography specifications and font files
-- Image style guides and examples
-- Template library for common formats
-```
-
-#### Automated Compliance Checking
-1. **Logo Validation**
-   - Correct version used
-   - Minimum size requirements met
-   - Clear space maintained
-   - Proper color/monochrome usage
-
-2. **Color Compliance**
-   - Exact match to brand palette
-   - Appropriate color mode (RGB/CMYK)
-   - Accessibility contrast ratios
-   - Consistent application across document
-
-3. **Typography Standards**
-   - Approved font families only
-   - Correct weights and styles
-   - Consistent sizing hierarchy
-   - Proper leading and kerning
-
-### 4.3 Intelligent Review Workflow
-
-#### 5-Stage Review Process
-```
-Stage 1: Initial Upload
-├── Document uploaded by designer
-├── Automatic preliminary scan
-└── Issue summary generated
-
-Stage 2: Self-Review
-├── Designer reviews flagged issues
-├── Makes corrections in-app or source file
-└── Marks items as resolved
-
-Stage 3: Team Lead Review
-├── Assigned automatically based on workload
-├── Reviews designer's corrections
-├── Adds additional feedback
-└── Approves or requests changes
-
-Stage 4: Client Preview (Optional)
-├── Clean preview link generated
-├── Client can add comments
-└── Feedback routed to designer
-
-Stage 5: Final Sign-off
-├── Senior reviewer final check
-├── Digital approval recorded
-└── Approved files packaged for delivery
-```
-
-#### Smart Assignment & Routing
-- Automatic reviewer assignment based on expertise
-- Workload balancing across team
-- Escalation rules for critical projects
-- Deadline tracking and alerts
-
-### 4.4 Collaboration Suite
-
-#### Real-time Annotation
-```
-Tools:
-- Pin comments to specific locations
-- Draw attention with highlights
-- Suggest text edits inline
-- Attach reference images
-- @mention team members
-```
-
-#### Version Control
-- Automatic version tracking
-- Visual diff between versions
-- Rollback capabilities
-- Change attribution
-- Merge conflict resolution
-
-### 4.5 Analytics & Insights
-
-#### Quality Metrics Dashboard
-```
-Key Metrics:
-- Error detection rate by category
-- Average review time per document type
-- Most common brand violations
-- Team member performance stats
-- Client satisfaction scores
-```
-
-#### Predictive Intelligence
-- Pattern recognition for common errors
-- Suggested fixes based on history
-- Risk scoring for documents
-- Time estimates for reviews
-- Quality trend analysis
-
-## 5. How It Works - User Journey
-
-### 5.1 Designer Workflow
+## 🏗️ Architecture
 
 ```
-1. START: Designer completes creative work
-   ↓
-2. UPLOAD: Drags file into Brand Check
-   ↓
-3. SCAN: Automatic quality scan runs (30-60 seconds)
-   ↓
-4. REVIEW: Dashboard shows categorized issues:
-   - Critical (must fix): 3 items
-   - Important (should fix): 7 items  
-   - Minor (consider): 12 items
-   ↓
-5. FIX: Designer addresses issues:
-   - Click issue → See detailed explanation
-   - Apply suggested fix or mark as intentional
-   - Upload revised file or edit in-app
-   ↓
-6. SUBMIT: Send for team review when ready
-   ↓
-7. ITERATE: Respond to reviewer feedback
-   ↓
-8. COMPLETE: Receive approval notification
+┌─────────────────────────────────────────────────────────────┐
+│                    Brand Check Service                     │
+├─────────────────────────────────────────────────────────────┤
+│  Frontend (React SPA)                                      │
+│  ├── DocumentViewer (sections, deep-linking)               │
+│  ├── SearchInterface (semantic + keyword)                  │
+│  ├── EditModal (authenticated editing)                     │
+│  └── Navigation (section jumps)                            │
+├─────────────────────────────────────────────────────────────┤
+│  Backend (Node.js + Express)                               │
+│  ├── DocumentService (parse, cache, serve)                 │
+│  ├── SearchService (embeddings, cosine similarity)         │
+│  ├── AuthMiddleware (Bearer token validation)              │
+│  └── FileWatcher (hot reload on changes)                   │
+├─────────────────────────────────────────────────────────────┤
+│  Storage Layer                                             │
+│  ├── In-memory document cache                              │
+│  ├── Section embeddings cache                              │
+│  └── JSON persistence on exit                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Reviewer Workflow
+## 🔧 Configuration
 
-```
-1. ASSIGN: Receive review notification
-   ↓
-2. EXAMINE: Open document with pre-flagged issues
-   ↓
-3. VALIDATE: Check designer's corrections
-   ↓
-4. ENHANCE: Add additional observations
-   ↓
-5. DECIDE: Approve, request changes, or escalate
-   ↓
-6. TRACK: Monitor designer's response
-```
+### Environment Variables
 
-### 5.3 Manager Workflow
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Server port |
+| `MARKDOWN_FILE` | `data/brand-check-app-overview.md` | Path to markdown file |
+| `EDIT_TOKEN` | `dev-edit-token` | Authentication token for editing |
+| `JWT_SECRET` | `dev-secret-key` | JWT signing secret |
+| `NODE_ENV` | `development` | Environment mode |
+| `LOG_LEVEL` | `info` | Logging level |
 
-```
-1. MONITOR: Real-time dashboard of all active reviews
-   ↓
-2. INTERVENE: Jump in when delays or issues arise
-   ↓
-3. ANALYZE: Review team performance metrics
-   ↓
-4. OPTIMIZE: Adjust workflows and rules
-   ↓
-5. REPORT: Generate client status updates
-```
+### Development Setup
 
-## 6. Technical Architecture
+1. **Install dependencies**:
+   ```bash
+   make install
+   ```
 
-### 6.1 Frontend Architecture
-```
-React App Structure:
-├── Components/
-│   ├── DocumentViewer/
-│   ├── AnnotationTools/
-│   ├── BrandAssetLibrary/
-│   ├── ReviewDashboard/
-│   └── Analytics/
-├── Services/
-│   ├── DocumentProcessor/
-│   ├── QualityChecker/
-│   ├── BrandValidator/
-│   └── WorkflowEngine/
-└── State Management (Redux/Zustand)
+2. **Create environment file**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Start development server**:
+   ```bash
+   make dev
+   ```
+
+## 📡 API Endpoints
+
+### Document Endpoints
+
+#### `GET /api/doc`
+Get the full document or a specific section.
+
+```bash
+# Get full document
+curl http://localhost:3000/api/doc
+
+# Get specific section
+curl "http://localhost:3000/api/doc?section=introduction"
 ```
 
-### 6.2 Backend Services
+**Response**:
+```json
+{
+  "metadata": {
+    "title": "Brand Check App - Complete Overview",
+    "lastModified": "2023-01-01T00:00:00.000Z",
+    "wordCount": 2847,
+    "sectionCount": 42,
+    "size": 18724
+  },
+  "sections": [...],
+  "htmlContent": "...",
+  "rawContent": "..."
+}
 ```
-Microservices Architecture:
-├── Document Service (upload, storage, retrieval)
-├── Analysis Service (text/visual processing)
-├── Brand Service (asset management, validation)
-├── Workflow Service (routing, notifications)
-├── User Service (auth, permissions, preferences)
-└── Analytics Service (metrics, reporting)
+
+#### `GET /api/doc/sections`
+Get table of contents.
+
+```bash
+curl http://localhost:3000/api/doc/sections
 ```
 
-### 6.3 AI/ML Components
-- Natural Language Processing for grammar checking
-- Computer Vision for visual compliance
-- Machine Learning for pattern recognition
-- Predictive modeling for time estimates
+#### `GET /api/doc/section/:slug`
+Get a specific section by slug.
 
-## 7. Implementation Roadmap
+```bash
+curl http://localhost:3000/api/doc/section/executive-summary
+```
 
-### Phase 1: Foundation (Months 1-2)
-- ✅ Basic document upload/viewing
-- ✅ Core text checking (spell, grammar)
-- ✅ Simple issue flagging
-- ✅ User authentication
+#### `PUT /api/doc` 🔒
+Update document content (requires authentication).
 
-### Phase 2: Brand Compliance (Months 3-4)
-- ✅ Brand asset library
-- ✅ Visual compliance checking
-- ✅ Custom rule configuration
-- ✅ Basic workflow routing
+```bash
+curl -X PUT http://localhost:3000/api/doc \
+  -H "Authorization: Bearer dev-edit-token" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Updated Document\n\nNew content.", "message": "Updated via API"}'
+```
 
-### Phase 3: Collaboration (Months 5-6)
-- ✅ Commenting and annotations
-- ✅ Version control
-- ✅ Team assignments
-- ✅ Notification system
+### Search Endpoints
 
-### Phase 4: Intelligence (Months 7-8)
-- ✅ AI-powered suggestions
-- ✅ Predictive analytics
-- ✅ Advanced automation
-- ✅ API integrations
+#### `GET /api/search?q=<query>`
+Search document content.
 
-### Phase 5: Scale (Months 9-12)
-- ✅ Multi-tenant architecture
-- ✅ Enterprise features
-- ✅ Mobile applications
-- ✅ Advanced reporting
+```bash
+curl "http://localhost:3000/api/search?q=brand%20guidelines&limit=5"
+```
 
-## 8. Success Metrics
+**Response**:
+```json
+{
+  "query": "brand guidelines",
+  "results": [
+    {
+      "section": {
+        "id": "section-1",
+        "slug": "brand-compliance-center",
+        "title": "Brand Compliance Center",
+        "content": "...",
+        "level": 2
+      },
+      "score": 0.85,
+      "matches": ["brand", "guidelines"]
+    }
+  ],
+  "totalResults": 1,
+  "searchTime": 23
+}
+```
 
-### 8.1 Efficiency Gains
-- **Time Saved**: 60% reduction in average review time
-- **Error Catch Rate**: 95% of issues caught before client review
-- **First-Pass Approval**: 80% of documents approved without revisions
+#### `POST /api/search/suggestions`
+Get search suggestions.
 
-### 8.2 Quality Improvements
-- **Brand Compliance**: 99% adherence to brand guidelines
-- **Consistency Score**: 90%+ across all deliverables
-- **Client Satisfaction**: 4.5+ star rating
+```bash
+curl -X POST http://localhost:3000/api/search/suggestions \
+  -H "Content-Type: application/json" \
+  -d '{"query": "brand", "limit": 5}'
+```
 
-### 8.3 Business Impact
-- **ROI**: 3x return within first year
-- **Adoption Rate**: 95% of team using within 3 months
-- **Revenue Impact**: 20% increase in project throughput
+### Utility Endpoints
 
-## 9. Competitive Advantages
+#### `GET /health`
+Health check endpoint.
 
-### 9.1 Unique Differentiators
-1. **Industry-Specific**: Built for creative agencies, not generic
-2. **Brand-Centric**: Deep brand compliance capabilities
-3. **Workflow Integration**: Matches existing creative processes
-4. **AI-Powered**: Smart suggestions, not just error flags
-5. **Collaborative**: Built for teams, not individuals
+```bash
+curl http://localhost:3000/health
+```
 
-### 9.2 Market Position
-- **vs Generic QA Tools**: More visual/brand focused
-- **vs Manual Process**: 10x faster, more consistent
-- **vs Competitors**: Better UX, deeper integration
+## 🔍 Search Features
 
-## 10. Future Vision
+### Semantic Search
+- **TF-IDF based embeddings** for semantic understanding
+- **Cosine similarity** for relevance scoring
+- **Context-aware** matching beyond exact keywords
 
-### 10.1 Advanced Features
-- **Creative AI Assistant**: Generate fixes, not just flag issues
-- **Multi-language Support**: Global brand compliance
-- **AR Preview**: See designs in real-world context
-- **Blockchain Verification**: Immutable approval records
-- **Client Portal**: Self-service status checking
+### Keyword Search
+- **Multi-term queries** with AND logic
+- **Case-insensitive** matching
+- **Title weighting** (3x boost for title matches)
 
-### 10.2 Ecosystem Integration
-- Adobe Creative Cloud plugins
-- Slack/Teams notifications
-- Project management sync
-- DAM system integration
-- Print production connectivity
+### Combined Results
+- **Hybrid scoring** (60% semantic + 40% keyword)
+- **Deduplication** with score merging
+- **Relevance sorting** with configurable thresholds
 
-### 10.3 Industry Expansion
-- Packaging design validation
-- Video/motion graphics QA
-- Social media compliance
-- Email template checking
-- Web design validation
+## 🔐 Authentication
 
-## 11. Conclusion
+The service uses Bearer token authentication for write operations:
 
-Brand Check represents a paradigm shift in creative quality assurance. By automating repetitive tasks, standardizing processes, and providing intelligent insights, it empowers creative teams to focus on what they do best – creating exceptional work – while ensuring every deliverable meets the highest standards of quality and brand compliance.
+### Development
+```bash
+# Use the development token
+export EDIT_TOKEN="dev-edit-token"
+```
 
-The journey from current MVP to fully-featured platform is ambitious but achievable. With phased implementation and continuous user feedback, Brand Check can become the industry standard for creative quality assurance.
+### Production
+```bash
+# Generate a secure token
+export EDIT_TOKEN=$(openssl rand -hex 32)
+```
+
+### JWT Support
+Alternatively, use JWT tokens:
+
+```bash
+# Set JWT secret
+export JWT_SECRET="your-secret-key"
+
+# Generate JWT token (example)
+node -e "console.log(require('jsonwebtoken').sign({user: 'editor'}, process.env.JWT_SECRET))"
+```
+
+## 🐳 Docker Deployment
+
+### Build Image
+```bash
+make docker-build
+```
+
+### Run Container
+```bash
+# Production mode
+make docker-run
+
+# Development mode
+make docker-dev
+
+# Custom configuration
+docker run -p 3000:3000 \
+  -e EDIT_TOKEN="your-secure-token" \
+  -e NODE_ENV="production" \
+  -v /path/to/your/docs:/app/data \
+  brand-check-service:latest
+```
+
+### Image Specifications
+- **Base**: `node:18-alpine`
+- **Size**: <400MB (optimized multi-stage build)
+- **Memory**: <300MB runtime usage
+- **Security**: Non-root user, minimal attack surface
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+make test
+```
+
+### Test Categories
+```bash
+# Unit tests only
+make quick-test
+
+# Integration tests
+npm test -- --testPathPattern=integration
+
+# With coverage
+make test-coverage
+```
+
+### Test Coverage
+The test suite includes:
+- **Unit tests** for services and utilities
+- **Integration tests** for API endpoints
+- **Performance tests** for search and reload times
+- **Security tests** for authentication
+
+## 📊 Performance
+
+### Benchmarks
+```bash
+# Run performance benchmarks
+make benchmark
+```
+
+**Expected Performance**:
+- Document reload: <5 seconds
+- Search response: <100ms
+- Concurrent requests: 100 req/s
+- Memory usage: <300MB sustained
+
+### Monitoring
+```bash
+# Monitor resource usage
+make monitor
+
+# Health check
+make health-check
+```
+
+## 🛠️ Development
+
+### Available Commands
+```bash
+make help              # Show all commands
+make dev               # Start development server
+make build             # Build for production
+make test              # Run tests
+make lint              # Lint code
+make ci                # Full CI pipeline
+```
+
+### Code Structure
+```
+src/
+├── server.ts          # Application entry point
+├── app.ts             # Express app configuration
+├── services/          # Business logic
+├── routes/            # API route handlers
+├── middleware/        # Express middleware
+├── types/             # TypeScript definitions
+└── utils/             # Utility functions
+
+client/
+├── src/
+│   ├── components/    # React components
+│   ├── services/      # API client
+│   ├── hooks/         # React hooks
+│   └── types/         # Client types
+└── dist/              # Built client assets
+```
+
+### Adding Features
+1. **Backend**: Add routes in `src/routes/`
+2. **Frontend**: Add components in `client/src/components/`
+3. **Tests**: Add tests in `tests/unit/` or `tests/integration/`
+4. **Documentation**: Update this README
+
+## 🚀 Production Deployment
+
+### Pre-deployment Checklist
+```bash
+make deploy-check
+```
+
+### Environment Setup
+```bash
+# Set production environment variables
+export NODE_ENV=production
+export EDIT_TOKEN="$(openssl rand -hex 32)"
+export JWT_SECRET="$(openssl rand -hex 32)"
+export PORT=3000
+```
+
+### Deploy with Docker
+```bash
+# Build production image
+make docker-build
+
+# Run health checks
+make health-check
+
+# Deploy
+docker run -d \
+  --name brand-check-service \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e EDIT_TOKEN="$EDIT_TOKEN" \
+  -v /app/data:/app/data:ro \
+  brand-check-service:latest
+```
+
+### Reverse Proxy (Nginx)
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+## 🔒 Security
+
+### Security Features
+- **HTTPS enforcement** in production
+- **Rate limiting** on API endpoints
+- **Input validation** and sanitization
+- **Bearer token authentication**
+- **Non-root Docker container**
+- **Minimal dependencies**
+
+### Security Headers
+```http
+Content-Security-Policy: default-src 'self'
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+```
+
+## 📈 Monitoring & Logging
+
+### Application Logs
+```bash
+# View logs (Docker)
+make logs
+
+# Log levels: error, warn, info, debug
+export LOG_LEVEL=info
+```
+
+### Health Monitoring
+```bash
+# Built-in health endpoint
+curl http://localhost:3000/health
+
+# Response
+{
+  "status": "healthy",
+  "timestamp": "2023-01-01T00:00:00.000Z",
+  "uptime": 12345,
+  "memory": {
+    "rss": 50331648,
+    "heapTotal": 20971520,
+    "heapUsed": 15728640
+  }
+}
+```
+
+### Performance Metrics
+- **Search latency**: <100ms p95
+- **Document reload**: <5s
+- **Memory usage**: <300MB
+- **CPU usage**: <50% sustained
+
+## 🛡️ Troubleshooting
+
+### Common Issues
+
+#### Service Won't Start
+```bash
+# Check logs
+make logs
+
+# Verify environment
+cat .env
+
+# Test locally
+make dev
+```
+
+#### Search Not Working
+```bash
+# Check search service initialization
+curl http://localhost:3000/api/search/config
+
+# Verify document loading
+curl http://localhost:3000/api/doc/metadata
+```
+
+#### Authentication Failures
+```bash
+# Verify token
+echo $EDIT_TOKEN
+
+# Test authentication
+curl -H "Authorization: Bearer $EDIT_TOKEN" \
+  http://localhost:3000/api/doc/validate \
+  -d '{"content":"test"}'
+```
+
+#### High Memory Usage
+```bash
+# Monitor memory
+make monitor
+
+# Check for memory leaks
+curl http://localhost:3000/health
+```
+
+### Debug Mode
+```bash
+# Enable debug logging
+export LOG_LEVEL=debug
+export NODE_ENV=development
+
+# Run with debug output
+make dev
+```
+
+## 🔄 File Watching & Hot Reload
+
+The service automatically detects file changes and reloads:
+
+### File Watch Features
+- **Real-time monitoring** of markdown file
+- **Debounced reloading** (100ms delay)
+- **Search index updates** on content change
+- **Client notification** via polling
+
+### Manual Reload
+```bash
+# Force reload via API
+curl -X PUT http://localhost:3000/api/doc \
+  -H "Authorization: Bearer dev-edit-token" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "'$(cat data/brand-check-app-overview.md | sed 's/"/\\"/g')'"}'
+```
+
+## 📚 API Reference
+
+Complete OpenAPI specification available at:
+```
+GET /api/docs
+```
+
+### Rate Limits
+- **API endpoints**: 100 requests/15min per IP
+- **Search**: Unlimited
+- **Document updates**: Authenticated only
+
+### Response Codes
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 401 | Unauthorized (missing token) |
+| 403 | Forbidden (invalid token) |
+| 404 | Not found |
+| 422 | Validation error |
+| 429 | Rate limit exceeded |
+| 500 | Internal server error |
+
+## 🎯 Use Cases
+
+### Documentation Teams
+- **Living documentation** that updates in real-time
+- **Collaborative editing** with version control
+- **Search-driven discovery** of content
+- **Section-based organization**
+
+### Content Management
+- **Markdown-first** authoring workflow
+- **API-driven updates** from external systems
+- **Structured content** with automatic TOC
+- **Mobile-responsive** viewing
+
+### Developer Integration
+- **REST API** for programmatic access
+- **Webhook support** for external notifications
+- **CI/CD integration** for automated updates
+- **Docker deployment** for easy scaling
+
+## 🚦 Status & Roadmap
+
+### Current Status: ✅ Production Ready
+- All hard requirements met
+- Comprehensive test coverage
+- Docker optimized
+- Security hardened
+
+### Future Enhancements
+- [ ] WebSocket for real-time updates
+- [ ] Multi-file support
+- [ ] Advanced search filters
+- [ ] Collaborative editing
+- [ ] Plugin system
+- [ ] Mobile app
+
+## 🤝 Contributing
+
+### Development Setup
+```bash
+# Fork the repository
+git clone <your-fork>
+cd brand-check-service
+
+# Setup development environment
+make setup-dev
+
+# Create feature branch
+git checkout -b feature/your-feature
+
+# Make changes and test
+make ci
+
+# Submit pull request
+```
+
+### Code Standards
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Jest** for testing
+- **Conventional commits** for history
+
+### Pull Request Process
+1. Fork and create feature branch
+2. Add tests for new functionality
+3. Ensure `make ci` passes
+4. Update documentation
+5. Submit pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+### Community
+- **Issues**: GitHub Issues for bug reports
+- **Discussions**: GitHub Discussions for questions
+- **Documentation**: This README and inline docs
+
+### Commercial Support
+Contact the maintainers for:
+- **Custom deployments**
+- **Enterprise features**
+- **SLA-backed support**
+- **Training and consulting**
+
+---
+
+## 📋 Appendix
+
+### Environment Variables Reference
+```bash
+# Core settings
+PORT=3000
+NODE_ENV=production
+MARKDOWN_FILE=data/brand-check-app-overview.md
+
+# Authentication
+EDIT_TOKEN=your-secure-token
+JWT_SECRET=your-jwt-secret
+
+# Logging
+LOG_LEVEL=info
+
+# CORS (production)
+ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
+```
+
+### Docker Compose Example
+```yaml
+version: '3.8'
+services:
+  brand-check:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - EDIT_TOKEN=${EDIT_TOKEN}
+    volumes:
+      - ./data:/app/data:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+### Nginx Configuration
+```nginx
+upstream brand_check {
+    server localhost:3000;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+    
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    
+    location / {
+        proxy_pass http://brand_check;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    
+    location /health {
+        access_log off;
+        proxy_pass http://brand_check;
+    }
+}
+```
+
+---
+
+**Brand Check Service** - Transform your Markdown into powerful, searchable web applications. 🚀
