@@ -1,0 +1,481 @@
+{
+  "info": {
+    "name": "Brand Check Service API",
+    "description": "Complete API collection for Brand Check Service - searchable, editable Markdown microservice",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token", 
+      "value": "dev-edit-token",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Monitoring",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check service health status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Document Management", 
+      "item": [
+        {
+          "name": "Get Full Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Retrieve the complete document with metadata, sections, and content"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Section",
+          "request": {
+            "method": "GET", 
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc?section=introduction",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"],
+              "query": [
+                {
+                  "key": "section",
+                  "value": "introduction",
+                  "description": "Section slug to retrieve"
+                }
+              ]
+            },
+            "description": "Get a specific document section by slug"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Table of Contents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc/sections",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc", "sections"]
+            },
+            "description": "Get list of all document sections (table of contents)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Section by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc/section/executive-summary",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc", "section", "executive-summary"]
+            },
+            "description": "Retrieve a specific section using its slug"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Metadata",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc", "metadata"]
+            },
+            "description": "Get document metadata only (title, word count, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type", 
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"# Updated Brand Check Document\\n\\n## New Section\\n\\nThis is updated content with new information.\",\n  \"message\": \"Updated via Postman API test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Update document content (requires authentication)"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json", 
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"# Test Document\\n\\nThis is test content for validation.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doc/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc", "validate"]
+            },
+            "description": "Validate markdown content before saving"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search & Discovery",
+      "item": [
+        {
+          "name": "Search Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=brand guidelines&limit=5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "brand guidelines",
+                  "description": "Search query"
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Maximum results (optional)"
+                }
+              ]
+            },
+            "description": "Search document content using semantic and keyword search"
+          },
+          "response": []
+        },
+        {
+          "name": "Search - Single Keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=design",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "design"
+                }
+              ]
+            },
+            "description": "Simple single keyword search"
+          },
+          "response": []
+        },
+        {
+          "name": "Search - Multiple Keywords",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=quality review automation",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "quality review automation"
+                }
+              ]
+            },
+            "description": "Multi-keyword search for complex queries"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Search Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search/config",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "config"]
+            },
+            "description": "Get current search service configuration"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Search Suggestions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"brand\",\n  \"limit\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/search/suggestions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search", "suggestions"]
+            },
+            "description": "Get search suggestions for autocomplete"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Cases & Edge Tests",
+      "item": [
+        {
+          "name": "Test 404 - Invalid Section",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc/section/non-existent-section",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc", "section", "non-existent-section"]
+            },
+            "description": "Test 404 error for non-existent section"
+          },
+          "response": []
+        },
+        {
+          "name": "Test 401 - No Auth Token",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"# Test without auth\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Test 401 error when no auth token provided"
+          },
+          "response": []
+        },
+        {
+          "name": "Test 403 - Invalid Auth Token",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid-token",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"# Test with invalid auth\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Test 403 error with invalid auth token"
+          },
+          "response": []
+        },
+        {
+          "name": "Test 422 - Empty Search Query",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Test validation error for empty search query"
+          },
+          "response": []
+        },
+        {
+          "name": "Test 422 - Invalid Content Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": 123\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Test validation error for invalid content type"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Performance Tests",
+      "item": [
+        {
+          "name": "Load Test - Multiple Searches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=automation workflow design quality",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "automation workflow design quality"
+                }
+              ]
+            },
+            "description": "Complex search for performance testing"
+          },
+          "response": []
+        },
+        {
+          "name": "Load Test - Large Document Fetch",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/doc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "doc"]
+            },
+            "description": "Full document fetch for performance testing"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set dynamic timestamp for requests",
+          "pm.globals.set('timestamp', Date.now());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript", 
+        "exec": [
+          "// Global test to check response time",
+          "pm.test('Response time is less than 2000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+          "});",
+          "",
+          "// Global test to check content type for successful responses",
+          "if (pm.response.code === 200) {",
+          "    pm.test('Response has JSON content type', function () {",
+          "        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ]
+}
