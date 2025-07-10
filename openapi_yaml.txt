@@ -1,0 +1,643 @@
+openapi: 3.0.3
+info:
+  title: Brand Check Service API
+  description: |
+    A production-ready microservice that transforms Markdown files into searchable, 
+    section-addressable, and editable HTTP/React applications.
+  version: 1.0.0
+  contact:
+    name: Brand Check Service
+    url: https://github.com/your-org/brand-check-service
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.yourdomain.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the service
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/doc:
+    get:
+      summary: Get document
+      description: Retrieve the full document or a specific section
+      operationId: getDocument
+      tags:
+        - Document
+      parameters:
+        - name: section
+          in: query
+          description: Section slug to retrieve
+          required: false
+          schema:
+            type: string
+            example: introduction
+      responses:
+        '200':
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParsedDocument'
+        '404':
+          description: Section not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    put:
+      summary: Update document
+      description: Update the document content (requires authentication)
+      operationId: updateDocument
+      tags:
+        - Document
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentRequest'
+      responses:
+        '200':
+          description: Document updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateDocumentResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '403':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/doc/sections:
+    get:
+      summary: Get table of contents
+      description: Retrieve a list of all document sections
+      operationId: getSections
+      tags:
+        - Document
+      responses:
+        '200':
+          description: Sections retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SectionSummary'
+                  totalSections:
+                    type: integer
+                    example: 12
+
+  /api/doc/section/{slug}:
+    get:
+      summary: Get section by slug
+      description: Retrieve a specific document section by its slug
+      operationId: getSectionBySlug
+      tags:
+        - Document
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Section slug
+          schema:
+            type: string
+            example: executive-summary
+      responses:
+        '200':
+          description: Section retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  section:
+                    $ref: '#/components/schemas/DocumentSection'
+                  metadata:
+                    $ref: '#/components/schemas/DocumentMetadata'
+        '404':
+          description: Section not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/doc/metadata:
+    get:
+      summary: Get document metadata
+      description: Retrieve document metadata only
+      operationId: getDocumentMetadata
+      tags:
+        - Document
+      responses:
+        '200':
+          description: Metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    $ref: '#/components/schemas/DocumentMetadata'
+
+  /api/doc/validate:
+    post:
+      summary: Validate document
+      description: Validate markdown content before saving
+      operationId: validateDocument
+      tags:
+        - Document
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Markdown content to validate
+              required:
+                - content
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/search:
+    get:
+      summary: Search documents
+      description: Search document content using semantic and keyword search
+      operationId: searchDocuments
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            example: brand guidelines
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 5
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/search/config:
+    get:
+      summary: Get search configuration
+      description: Retrieve current search service configuration
+      operationId: getSearchConfig
+      tags:
+        - Search
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  config:
+                    $ref: '#/components/schemas/SearchConfig'
+
+  /api/search/suggestions:
+    post:
+      summary: Get search suggestions
+      description: Get search suggestions based on partial query
+      operationId: getSearchSuggestions
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Partial search query
+                  example: brand
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+                  default: 5
+              required:
+                - query
+      responses:
+        '200':
+          description: Suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    example: brand
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        text:
+                          type: string
+                          example: brand guidelines
+                        slug:
+                          type: string
+                          example: brand-guidelines
+                        type:
+                          type: string
+                          enum: [section, keyword]
+                          example: section
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Use a Bearer token for authentication. For development, use 'dev-edit-token'.
+        For production, use a secure JWT token or custom token.
+
+  schemas:
+    DocumentSection:
+      type: object
+      properties:
+        id:
+          type: string
+          example: section-1
+        slug:
+          type: string
+          example: executive-summary
+        title:
+          type: string
+          example: Executive Summary
+        content:
+          type: string
+          example: This document provides a complete overview...
+        level:
+          type: integer
+          minimum: 1
+          maximum: 6
+          example: 1
+        startLine:
+          type: integer
+          example: 1
+        endLine:
+          type: integer
+          example: 10
+      required:
+        - id
+        - slug
+        - title
+        - content
+        - level
+        - startLine
+        - endLine
+
+    DocumentMetadata:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Brand Check App - Complete Overview
+        lastModified:
+          type: string
+          format: date-time
+          example: '2023-01-01T00:00:00.000Z'
+        size:
+          type: integer
+          description: File size in bytes
+          example: 18724
+        wordCount:
+          type: integer
+          example: 2847
+        sectionCount:
+          type: integer
+          example: 42
+      required:
+        - title
+        - lastModified
+        - size
+        - wordCount
+        - sectionCount
+
+    ParsedDocument:
+      type: object
+      properties:
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSection'
+        rawContent:
+          type: string
+          description: Original markdown content
+        htmlContent:
+          type: string
+          description: Parsed HTML content
+      required:
+        - metadata
+        - sections
+        - rawContent
+        - htmlContent
+
+    SectionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          example: section-1
+        slug:
+          type: string
+          example: executive-summary
+        title:
+          type: string
+          example: Executive Summary
+        level:
+          type: integer
+          example: 1
+        wordCount:
+          type: integer
+          example: 125
+      required:
+        - id
+        - slug
+        - title
+        - level
+        - wordCount
+
+    SearchResult:
+      type: object
+      properties:
+        section:
+          $ref: '#/components/schemas/DocumentSection'
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.85
+        matches:
+          type: array
+          items:
+            type: string
+          example: ["brand", "guidelines"]
+      required:
+        - section
+        - score
+        - matches
+
+    SearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+          example: brand guidelines
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        totalResults:
+          type: integer
+          example: 3
+        searchTime:
+          type: integer
+          description: Search time in milliseconds
+          example: 45
+      required:
+        - query
+        - results
+        - totalResults
+        - searchTime
+
+    SearchConfig:
+      type: object
+      properties:
+        maxResults:
+          type: integer
+          example: 10
+        minScore:
+          type: number
+          format: float
+          example: 0.1
+        enableSemanticSearch:
+          type: boolean
+          example: true
+        enableKeywordSearch:
+          type: boolean
+          example: true
+      required:
+        - maxResults
+        - minScore
+        - enableSemanticSearch
+        - enableKeywordSearch
+
+    UpdateDocumentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          description: New markdown content
+          example: "# Updated Document\n\nNew content here."
+        message:
+          type: string
+          description: Optional commit message
+          example: Updated brand guidelines
+      required:
+        - content
+
+    UpdateDocumentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Document updated successfully
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+      required:
+        - success
+        - message
+        - metadata
+
+    ValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          example: true
+        errors:
+          type: array
+          items:
+            type: string
+          example: []
+        warnings:
+          type: array
+          items:
+            type: string
+          example: ["Document should have at least one heading"]
+        stats:
+          type: object
+          properties:
+            characters:
+              type: integer
+              example: 1250
+            words:
+              type: integer
+              example: 200
+            lines:
+              type: integer
+              example: 45
+            paragraphs:
+              type: integer
+              example: 8
+      required:
+        - valid
+        - errors
+        - warnings
+        - stats
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          example: healthy
+        timestamp:
+          type: string
+          format: date-time
+          example: '2023-01-01T00:00:00.000Z'
+        uptime:
+          type: number
+          description: Uptime in seconds
+          example: 12345.67
+        memory:
+          type: object
+          properties:
+            rss:
+              type: integer
+              description: Resident Set Size
+            heapTotal:
+              type: integer
+              description: Total heap size
+            heapUsed:
+              type: integer
+              description: Used heap size
+            external:
+              type: integer
+              description: External memory usage
+      required:
+        - status
+        - timestamp
+        - uptime
+        - memory
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Validation Error
+        message:
+          type: string
+          example: Content is required and must be a string
+        statusCode:
+          type: integer
+          example: 422
+        timestamp:
+          type: string
+          format: date-time
+          example: '2023-01-01T00:00:00.000Z'
+      required:
+        - error
+        - message
+        - statusCode
+        - timestamp
+
+tags:
+  - name: Health
+    description: Service health and monitoring
+  - name: Document
+    description: Document management operations
+  - name: Search
+    description: Search and discovery operations
