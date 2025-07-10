@@ -1,0 +1,143 @@
+import { EmbeddingConfig } from '../types';
+import { logger } from '../utils/logger';
+
+export class EmbeddingService {
+  private config: EmbeddingConfig = {
+    model: 'simple-tfidf',
+    dimension: 384,
+    maxTokens: 512,
+  };
+  
+  private vocabulary: Map<string, number> = new Map();
+  private idf: Map<string, number> = new Map();
+  private isInitialized = false;
+
+  async initialize(): Promise<void> {
+    try {
+      this.isInitialized = true;
+      logger.info('Embedding service initialized with simple TF-IDF model');
+    } catch (error) {
+      logger.error('Failed to initialize embedding service:', error);
+      throw error;
+    }
+  }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    if (!this.isInitialized) {
+      throw new Error('Embedding service not initialized');
+    }
+
+    try {
+      // Simple TF-IDF based embedding for in-memory operation
+      const tokens = this.tokenize(text);
+      const tf = this.calculateTF(tokens);
+      
+      // Create a fixed-size vector
+      const embedding = new Array(this.config.dimension).fill(0);
+      
+      // Map tokens to embedding dimensions using hash
+      for (const [token, tfScore] of tf) {
+        const hash = this.hashString(token) % this.config.dimension;
+        const idfScore = this.idf.get(token) || 1;
+        embedding[hash] += tfScore * idfScore;
+      }
+      
+      // Normalize the vector
+      return this.normalizeVector(embedding);
+      
+    } catch (error) {
+      logger.error('Failed to generate embedding:', error);
+      throw error;
+    }
+  }
+
+  private tokenize(text: string): string[] {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(token => token.length > 2 && token.length < 20)
+      .filter(token => !this.isStopWord(token));
+  }
+
+  private calculateTF(tokens: string[]): Map<string, number> {
+    const tf = new Map<string, number>();
+    const totalTokens = tokens.length;
+    
+    // Count term frequencies
+    for (const token of tokens) {
+      tf.set(token, (tf.get(token) || 0) + 1);
+    }
+    
+    // Normalize by total tokens
+    for (const [token, count] of tf) {
+      tf.set(token, count / totalTokens);
+    }
+    
+    return tf;
+  }
+
+  private hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
+  }
+
+  private normalizeVector(vector: number[]): number[] {
+    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+    return magnitude === 0 ? vector : vector.map(val => val / magnitude);
+  }
+
+  private isStopWord(word: string): boolean {
+    const stopWords = new Set([
+      'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have',
+      'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you',
+      'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they',
+      'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my',
+      'one', 'all', 'would', 'there', 'their', 'what', 'so',
+      'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me'
+    ]);
+    return stopWords.has(word);
+  }
+
+  updateVocabulary(documents: string[]): void {
+    const allTokens = new Set<string>();
+    const docTokens: string[][] = [];
+    
+    // Collect all tokens from documents
+    for (const doc of documents) {
+      const tokens = this.tokenize(doc);
+      docTokens.push(tokens);
+      tokens.forEach(token => allTokens.add(token));
+    }
+    
+    // Calculate IDF scores
+    const totalDocs = documents.length;
+    for (const token of allTokens) {
+      let docCount = 0;
+      for (const tokens of docTokens) {
+        if (tokens.includes(token)) {
+          docCount++;
+        }
+      }
+      
+      // IDF = log(total docs / docs containing term)
+      const idf = Math.log(totalDocs / (docCount + 1));
+      this.idf.set(token, idf);
+    }
+    
+    logger.info(`Vocabulary updated: ${allTokens.size} unique tokens`);
+  }
+
+  isReady(): boolean {
+    return this.isInitialized;
+  }
+
+  getConfig(): EmbeddingConfig {
+    return { ...this.config };
+  }
+}
